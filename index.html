@@ -1,0 +1,77 @@
+<script src="JSZip.js"></script>
+<!-- onchange event could be added to fileselector to show the currently selected files, ext.-->
+<input id="fileselector" type="file" accept="*" multiple>
+<br>
+<input id="extrabytes" type="number" placeholder="Kilobytes of storage to waste">
+<br>
+<input id="filename" placeholder="Name of ZIP Archive">
+<br><br>
+<button onclick="createFile()">Generate File</button>
+<br>
+<p id="percent"></p>
+
+<script>
+	
+	
+	
+	async function createFile() {
+		
+		
+		name = document.querySelector("#filename").value
+		additionalSize = document.querySelector("#extrabytes").value * 1024
+		
+		
+		
+		
+		let zip = new JSZip()
+		
+
+		let elem = document.querySelector("#fileselector")
+		let files = elem.files
+		for (let i=0;i<files.length;i++) {
+			let file = files[i]
+			
+			let buffer = await new Promise((resolve, reject) => {
+				let reader = new FileReader()
+				reader.readAsArrayBuffer(file)
+				reader.onload = function() {resolve(reader.result)}
+			})
+			let blob = new Blob([buffer], {type: file.type})			
+ 			zip.file(file.name, blob)
+		}
+		
+
+		
+		
+		
+		
+		//Add 26 (to avoid one massive file that may show up due to size) files with a dot in front to be invisible
+		let perFile = Math.ceil(additionalSize/26)
+		let letters = "abcdefghijklmnopqrstuvwxyz"
+		for (let i=0;i<26;i++) {
+			zip.file("." + i + ".txt", (letters[i]).repeat(perFile))
+		}
+		
+        let content = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: {
+                level: 1 //Max is 9. Define STORE as compression to use no compression
+            },
+			streamFiles:true
+        }, function(metadata){document.getElementById("percent").innerHTML = "Generation of file is " + metadata.percent + "% complete."})
+		
+		var link = document.createElement("a");
+		document.body.appendChild(link);
+
+		link.download = name
+		link.href = URL.createObjectURL(content);
+		link.click();
+
+		document.body.removeChild(link);
+	}
+	
+	
+	
+
+</script>
